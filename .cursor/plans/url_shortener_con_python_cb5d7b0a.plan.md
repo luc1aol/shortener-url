@@ -26,6 +26,30 @@ todos:
   - id: create-config-files
     content: Crear requirements.txt, .env.example, .gitignore y README.md
     status: completed
+  - id: todo-1769363356288-fttgef1z2
+    content: Crear estructura de directorios y archivos base del proyecto
+    status: pending
+  - id: todo-1769363361036-y1pf7v76r
+    content: Configurar PostgreSQL con SQLAlchemy y crear modelo ShortUrl
+    status: pending
+  - id: todo-1769363363661-93el2myln
+    content: Configurar cliente Redis para caché
+    status: pending
+  - id: todo-1769363366883-v5kbbanqj
+    content: Implementar función de generación de códigos únicos base62
+    status: pending
+  - id: todo-1769363381109-vz4uxu6lc
+    content: Crear servicio de URLs con lógica de creación y recuperación
+    status: pending
+  - id: todo-1769363387243-8se1s54bs
+    content: Implementar endpoints POST /api/urls, GET /{code}, y opcional GET /api/urls/{code}/stats
+    status: pending
+  - id: todo-1769363390417-thwsd4dxi
+    content: Configurar aplicación FastAPI principal con routers y middleware
+    status: pending
+  - id: todo-1769363394371-ekbtmq143
+    content: Crear requirements.txt, .env.example, .gitignore y README.md
+    status: pending
 isProject: false
 ---
 
