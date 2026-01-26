@@ -36,7 +36,7 @@ cd shortener-url
 2. Crear un entorno virtual:
 ```bash
 python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+source venv/bin/activate  # En Windows: venv\Scripts\activate 
 ```
 
 3. Instalar dependencias:
