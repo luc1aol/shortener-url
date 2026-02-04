@@ -5,6 +5,9 @@ from app.schemas import UrlCreate, UrlResponse, UrlStats
 from app.services.url_service import UrlService
 from app.api.dependencies import get_database
 from app.config import settings
+import qrcode
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 redirect_router = APIRouter()
@@ -18,7 +21,8 @@ def create_short_url(url_data: UrlCreate, db: Session = Depends(get_database)):
         return UrlResponse(
             short_url=f"{settings.BASE_URL}/{short_url.code}",
             original_url=short_url.original_url,
-            code=short_url.code
+            code=short_url.code,
+            qr_url=f"{settings.BASE_URL}/api/urls/{short_url.code}/qr" 
         )
     except Exception as e:
         raise HTTPException(
@@ -58,3 +62,39 @@ def get_url_stats(code: str, db: Session = Depends(get_database)):
         clicks=short_url.clicks,
         created_at=short_url.created_at
     )
+
+@router.get("/urls/{code}/qr")
+def get_url_qr(code: str, db: Session = Depends(get_database)):
+    """Generar código QR para una URL corta específica"""
+    
+    # Verificar URL existe
+    short_url_obj = UrlService.get_short_url(db, code)
+    
+    if not short_url_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="URL corta no encontrada"
+        )
+    
+    # Construir la URL completa de la URL corta
+    # QR apunta a la versión corta para contar el click
+    full_short_url = f"{settings.BASE_URL}/{short_url_obj.code}"
+    
+    # Generar la imagen del QR
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(full_short_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Guardar la imagen en memoria (buffer) en lugar de disco
+    img_byte_arr = BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    
+    return StreamingResponse(img_byte_arr, media_type="image/png")

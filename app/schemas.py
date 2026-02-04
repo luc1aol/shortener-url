@@ -31,3 +31,12 @@ class UrlStats(BaseModel):
     
     class Config:
         from_attributes = True
+
+class UrlResponse(BaseModel):
+    short_url: str
+    original_url: str
+    code: str
+    qr_url: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
