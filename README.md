@@ -25,7 +25,7 @@ Un generador de URLs acortadas construido con Python, FastAPI, PostgreSQL y Redi
 - PostgreSQL 12+
 - Redis 6+
 
-## Instalación
+## Instalación 
 
 1. Clonar el repositorio:
 ```bash
@@ -61,7 +61,18 @@ cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-2. Acceder a la documentación interactiva:
+## Instalación rápida con Docker
+
+1. Asegúrate de tener Docker Desktop instalado.
+   
+2. Ejecuta:
+```bash
+  docker-compose up --build
+```
+3. La API estará disponible en http://localhost:8000
+
+
+## Acceder a la documentación interactiva:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
@@ -155,7 +166,3 @@ Para ejecutar en modo desarrollo con recarga automática:
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-
-## Licencia
-
-Este proyecto es de código abierto y está disponible bajo la licencia MIT.
