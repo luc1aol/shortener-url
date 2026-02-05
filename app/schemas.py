@@ -5,6 +5,7 @@ from typing import Optional
 
 class UrlCreate(BaseModel):
     url: str
+    expires_at: Optional[datetime] = None
     
     @field_validator('url')
     @classmethod
@@ -18,6 +19,7 @@ class UrlResponse(BaseModel):
     short_url: str
     original_url: str
     code: str
+    expires_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -28,6 +30,7 @@ class UrlStats(BaseModel):
     original_url: str
     clicks: int
     created_at: datetime
+    expires_at: Optional[datetime]=None
     
     class Config:
         from_attributes = True

@@ -9,4 +9,5 @@ class ShortUrl(Base):
     code = Column(String, unique=True, index=True, nullable=False)
     original_url = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     clicks = Column(Integer, default=0)

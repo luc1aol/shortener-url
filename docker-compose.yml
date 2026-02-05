@@ -18,6 +18,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv
+            - __pycache__
+            - .git
+            - .idea
+            - .vscode
+
+        - action: rebuild
+          path: ./requirements.txt
 
   db:
     image: postgres:15-alpine

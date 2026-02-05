@@ -12,16 +12,18 @@ from fastapi.responses import StreamingResponse
 router = APIRouter()
 redirect_router = APIRouter()
 
-
+    
 @router.post("/urls", response_model=UrlResponse, status_code=status.HTTP_201_CREATED)
 def create_short_url(url_data: UrlCreate, db: Session = Depends(get_database)):
     """Crear una nueva URL corta"""
     try:
-        short_url = UrlService.create_short_url(db, url_data.url)
+        short_url = UrlService.create_short_url(db, url_data.url, url_data.expires_at)
+        
         return UrlResponse(
             short_url=f"{settings.BASE_URL}/{short_url.code}",
             original_url=short_url.original_url,
             code=short_url.code,
+            expires_at=short_url.expires_at,
             qr_url=f"{settings.BASE_URL}/api/urls/{short_url.code}/qr" 
         )
     except Exception as e:
@@ -60,7 +62,8 @@ def get_url_stats(code: str, db: Session = Depends(get_database)):
         code=short_url.code,
         original_url=short_url.original_url,
         clicks=short_url.clicks,
-        created_at=short_url.created_at
+        created_at=short_url.created_at,
+        expires_at=short_url.expires_at
     )
 
 @router.get("/urls/{code}/qr")
