@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
-from app.models import ShortUrl
+from app.models import ShortUrl, Click
 from app.utils import generate_unique_code
 from app.redis_client import redis_client
-from app.config import settings
 from typing import Optional
 from datetime import datetime, timezone
-
+from user_agents import parse
+from fastapi import Request, BackgroundTasks
 
 class UrlService:
     @staticmethod
@@ -44,49 +44,99 @@ class UrlService:
         return short_url
     
     @staticmethod
-    def get_original_url(db: Session, code: str) -> Optional[str]:
+    def get_original_url(
+            db: Session, 
+            code: str, 
+            background_tasks: BackgroundTasks = None,
+            request: Request = None
+        ) -> Optional[str]:
         """Obtener URL original por código, usando Redis como caché"""
         redis_key = f"url:{code}"
         
+        original_url = None
+        
         # Intentar obtener de Redis primero
         cached_url = redis_client.get(redis_key)
+        
         if cached_url:
-            # Incrementar contador de clicks
-            UrlService._increment_clicks(db, code)
-            return cached_url
+            original_url = cached_url
         
-        # Si no está en caché, buscar en PostgreSQL
-        short_url = db.query(ShortUrl).filter(ShortUrl.code == code).first()
-        if not short_url:
-            return None
-        
-        # Lazy check 
-        if short_url.expires_at:
-            if short_url.expires_at.tzinfo:
-                now = datetime.now(timezone.utc)
-            else:
-                now = datetime.now()
-
-            # Si ya pasó la fecha, devolvemos None (404)
-            if now > short_url.expires_at:
+        if not original_url:
+            short_url_obj = db.query(ShortUrl).filter(ShortUrl.code == code).first()
+            if not short_url_obj:
                 return None
-        
-        # Si sigue viva, la guardamos en cache de nuevo (con su TTL restante si tiene)
-        if short_url.expires_at:
-            if short_url.expires_at.tzinfo:
-                now = datetime.now(timezone.utc)
+
+            if short_url_obj.expires_at:
+                tz = short_url_obj.expires_at.tzinfo
+                now = datetime.now(timezone.utc) if tz else datetime.now()
+
+                if now > short_url_obj.expires_at:
+                    return None
+                # Calcular TTL restante
+                ttl = int((short_url_obj.expires_at - now).total_seconds())
+                if ttl > 0:
+                    redis_client.set(redis_key, short_url_obj.original_url, ttl=ttl)
             else:
-                now = datetime.now()
-                
-            ttl = int((short_url.expires_at - now).total_seconds())
-            if ttl > 0:
-                redis_client.set(redis_key, short_url.original_url, ttl=ttl)
+            # Sin expiración
+                redis_client.set(redis_key, short_url_obj.original_url)
+            
+            original_url = short_url_obj.original_url
+                    
+        # Registrar click en background
+        if original_url:
+            if background_tasks:
+                background_tasks.add_task(
+                    UrlService._process_click_background, 
+                    db, code, request
+                )
+            else:
+                # Fallback síncrono
+                UrlService._process_click_background(db, code, request)
+
+        return original_url
+    
+    @staticmethod
+    def _process_click_background(db: Session, code: str, request: Request = None):
+        """Método encapsulado para correr en segundo plano"""
+        try:
+            
+            if request:
+                UrlService._register_click(db, code, request)
+            else:
+                UrlService._increment_clicks(db, code)
+        except Exception as e:
+            print(f"Error guardando analytics en background: {e}")
+    
+    @staticmethod
+    def _register_click(db: Session, code: str, request: Request):
+        # 1. Obtener User-Agent string
+        ua_string = request.headers.get('user-agent', '')
+        user_agent = parse(ua_string)
+
+        # 2. Detectar tipo de dispositivo
+        if user_agent.is_mobile:
+            device = "Mobile"
+        elif user_agent.is_tablet:
+            device = "Tablet"
+        elif user_agent.is_pc:
+            device = "Desktop"
         else:
-            redis_client.set(redis_key, short_url.original_url)
+            device = "Bot/Other"
+
+        # 3. Obtener Referrer (Ojo: el header HTTP estándar se escribe 'referer' con una r)
+        referrer = request.headers.get('referer', 'Direct')
+
+        # 4. Guardar en BD
+        new_click = Click(
+            short_url_code=code,
+            referrer=referrer,
+            browser=user_agent.browser.family,
+            os=user_agent.os.family,        
+            device_type=device                 
+        )
+        db.add(new_click)
         
-        # Incrementar contador de clicks
         UrlService._increment_clicks(db, code)
-        return short_url.original_url
     
     @staticmethod
     def _increment_clicks(db: Session, code: str):

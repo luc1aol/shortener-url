@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.schemas import UrlCreate, UrlResponse, UrlStats
@@ -34,9 +34,20 @@ def create_short_url(url_data: UrlCreate, db: Session = Depends(get_database)):
 
 
 @redirect_router.get("/{code}")
-def redirect_to_original(code: str, db: Session = Depends(get_database)):
+def redirect_to_original(
+        code: str, 
+        request: Request, 
+        background_tasks: BackgroundTasks, 
+        db: Session = Depends(get_database)
+    ):
+    
     """Redirigir a la URL original"""
-    original_url = UrlService.get_original_url(db, code)
+    original_url = UrlService.get_original_url(
+        db=db, 
+        code=code,
+        background_tasks=background_tasks,
+        request=request
+    )
     
     if not original_url:
         raise HTTPException(
@@ -61,7 +72,7 @@ def get_url_stats(code: str, db: Session = Depends(get_database)):
     return UrlStats(
         code=short_url.code,
         original_url=short_url.original_url,
-        clicks=short_url.clicks,
+        clicks=short_url.clicks_count,
         created_at=short_url.created_at,
         expires_at=short_url.expires_at
     )
