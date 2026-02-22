@@ -8,13 +8,20 @@ from app.config import settings
 import qrcode
 from io import BytesIO
 from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
+from app.limiter import limiter
 
 router = APIRouter()
 redirect_router = APIRouter()
 
     
 @router.post("/urls", response_model=UrlResponse, status_code=status.HTTP_201_CREATED)
-def create_short_url(url_data: UrlCreate, db: Session = Depends(get_database)):
+@limiter.limit("10/minute")
+def create_short_url(
+    request: Request, 
+    url_data: UrlCreate, 
+    db: Session = Depends(get_database)
+):
     """Crear una nueva URL corta"""
     try:
         short_url = UrlService.create_short_url(db, url_data.url, url_data.expires_at)
