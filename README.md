@@ -2,30 +2,39 @@
 
 Un generador de URLs acortadas construido con Python, FastAPI, PostgreSQL y Redis.
 
-## Características
+## 🌌 Características
 
-- Generación rápida de URLs cortas usando códigos base62 únicos
-- Almacenamiento persistente en PostgreSQL
-- Caché de alto rendimiento con Redis
-- API RESTful con documentación automática
-- Estadísticas de uso (contador de clicks)
-- Validación de URLs
+- **Acortamiento eficiente**: Generación de códigos únicos base62.
+- **Alto Rendimiento**: Caché con Redis para redirecciones instantáneas.
+- **Persistencia**: Almacenamiento seguro en PostgreSQL.
+- **Rate Limiting**: Protección contra abuso de API (límite de peticiones por IP).
+- **Códigos QR**: Generación automática de QR para cada URL acortada.
+- **Analíticas Avanzadas**: Registro de clicks incluyendo:
+  - Navegador
+  - Sistema Operativo
+  - Tipo de dispositivo (Móvil/Desktop/Tablet)
+  - Referrer
 
-## Tecnologías
+## 🛠️ Tecnologías
 
-- **FastAPI**: Framework web moderno y rápido
-- **PostgreSQL**: Base de datos relacional para persistencia
-- **Redis**: Base de datos en memoria para caché
-- **SQLAlchemy**: ORM para Python
-- **Pydantic**: Validación de datos
+- **Core**: Python, FastAPI
+- **Base de Datos**: PostgreSQL
+- **Caché & Limiter**: Redis
+- **Seguridad**: SlowAPI (Rate Limiting)
+- **Utilidades**: 
+  - `qrcode` (Generación de imágenes)
+  - `user-agents` (Parsing de dispositivos)
+  - `pydantic` (Validación de datos)
 
-## Requisitos Previos
+## 🔙 Requisitos Previos
 
-- Python 3.8+
-- PostgreSQL 12+
-- Redis 6+
+- Docker y Docker Compose (Recomendado)
+- O, para ejecución local manual:
+  - Python 3.11+
+  - PostgreSQL local o remoto
+  - Redis local o remoto
 
-## Instalación 
+## 🐳 Instalación rápida con Docker
 
 1. Clonar el repositorio:
 ```bash
@@ -33,136 +42,132 @@ git clone <repository-url>
 cd shortener-url
 ```
 
-2. Crear un entorno virtual:
-```bash
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate 
-```
-
-3. Instalar dependencias:
-```bash
-pip install -r requirements.txt
-```
-
-4. Configurar variables de entorno:
+2. Crear archivo de entorno:
+En Linux/Mac
 ```bash
 cp .env.example .env
-# Editar .env con tus configuraciones
 ```
-
-5. Asegurarse de que PostgreSQL y Redis estén ejecutándose
-
-6. Inicializar la base de datos (se crea automáticamente al iniciar la app)
-
-## Uso
-
-1. Iniciar el servidor:
+En Windows
 ```bash
-uvicorn app.main:app --reload
+copy .env.example .env
 ```
 
-## Instalación rápida con Docker
-
-1. Asegúrate de tener Docker Desktop instalado.
-   
-2. Ejecuta:
+3. Levantar los servicios:
 ```bash
   docker-compose up --build
 ```
-3. La API estará disponible en http://localhost:8000
 
+4. La API estará disponible en http://localhost:8000
 
-## Acceder a la documentación interactiva:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+## 🔧 Uso y Endpoints
 
-## Endpoints de la API
-
-### Crear URL corta
+### 1. Crear URL corta
 ```http
 POST /api/urls
-Content-Type: application/json
 
 {
-  "url": "https://example.com"
+  "url": "[https://www.google.com](https://www.google.com)",
+  "expires_at": "2030-01-01T00:00:00"  // Opcional
 }
 ```
+Crea una URL corta. Opcionalmente puedes definir fecha de expiración.
+Límite: 10 peticiones por minuto por IP.
 
 **Respuesta:**
 ```json
 {
   "short_url": "http://localhost:8000/abc123",
-  "original_url": "https://example.com",
-  "code": "abc123"
+  "original_url": "[https://www.google.com](https://www.google.com)",
+  "code": "abc123",
+  "qr_url": "http://localhost:8000/api/urls/XyZ123/qr",
+  "expires_at": "2030-01-01T00:00:00"
 }
 ```
 
-### Redirigir a URL original
+### 2. Redirigir a URL original
 ```http
 GET /{code}
 ```
 
-Redirige automáticamente a la URL original (302 Redirect).
+Redirige a la URL original. Si la URL ha expirado, devuelve 404.
+Este endpoint registra las estadísticas (navegador, OS, etc.) en segundo plano.
 
-### Obtener estadísticas
+### 3. Obtener Código QR
+```http
+GET /api/urls/{code}/qr
+```
+
+Devuelve una imagen PNG del código QR que apunta a la URL corta.
+
+### 4. Obtener estadísticas
 ```http
 GET /api/urls/{code}/stats
 ```
+Devuelve el contador de clicks y el historial detallado.
 
 **Respuesta:**
 ```json
 {
   "code": "abc123",
-  "original_url": "https://example.com",
-  "clicks": 42,
-  "created_at": "2026-01-23T10:30:00"
+  "original_url": "[https://www.google.com](https://www.google.com)",
+  "clicks": 15,
+  "created_at": "2026-02-20T10:00:00",
+  "expires_at": null,
+  "history": [
+    {
+      "created_at": "2026-02-21T14:30:00",
+      "referrer": "[https://twitter.com/](https://twitter.com/)",
+      "browser": "Chrome",
+      "os": "Windows",
+      "device_type": "Desktop"
+    },
+    {
+      "created_at": "2026-02-21T14:35:00",
+      "referrer": "Direct",
+      "browser": "Mobile Safari",
+      "os": "iOS",
+      "device_type": "Mobile"
+    }
+  ]
 }
 ```
 
-## Estructura del Proyecto
+## 📂 Estructura del Proyecto
 
 ```
 shortener-url/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py              # Aplicación FastAPI principal
-│   ├── config.py            # Configuración
-│   ├── models.py            # Modelos SQLAlchemy
-│   ├── schemas.py           # Schemas Pydantic
-│   ├── database.py          # Configuración de base de datos
-│   ├── redis_client.py      # Cliente Redis
-│   ├── utils.py             # Utilidades
 │   ├── api/
-│   │   ├── routes.py        # Endpoints
-│   │   └── dependencies.py  # Dependencias
-│   └── services/
-│       └── url_service.py   # Lógica de negocio
+│   │   ├── routes.py        # Endpoints (Creación, Stats, QR)
+│   │   └── dependencies.py  # Inyección de dependencias (DB)
+│   ├── services/
+│   │   └── url_service.py   # Lógica de negocio y caché
+│   ├── main.py              # Configuración de FastAPI y Rate Limiter
+│   ├── config.py            # Variables de entorno
+│   ├── models.py            # Modelos SQLAlchemy (Tablas)
+│   ├── schemas.py           # Modelos Pydantic (Validación)
+│   ├── database.py          # Conexión DB
+│   ├── redis_client.py      # Conexión Redis
+│   ├── limiter.py           # Configuración de SlowAPI
+│   └── utils.py             # Generador de códigos
 ├── requirements.txt
-├── .env.example
-├── .gitignore
-└── README.md
+├── docker-compose.yml
+├── Dockerfile
+└── .env.example
 ```
 
-## Configuración
+## ⚙️ Configuración
 
 Las siguientes variables de entorno pueden ser configuradas en el archivo `.env`:
 
-- `POSTGRES_USER`: Usuario de PostgreSQL
-- `POSTGRES_PASSWORD`: Contraseña de PostgreSQL
-- `POSTGRES_HOST`: Host de PostgreSQL
-- `POSTGRES_PORT`: Puerto de PostgreSQL
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
 - `POSTGRES_DB`: Nombre de la base de datos
-- `REDIS_HOST`: Host de Redis
-- `REDIS_PORT`: Puerto de Redis
+- `REDIS_HOST`
+- `REDIS_PORT`
 - `REDIS_DB`: Base de datos de Redis
 - `REDIS_TTL`: Tiempo de vida del caché en segundos
 - `BASE_URL`: URL base para las URLs cortas generadas
 - `CODE_LENGTH`: Longitud del código de URL corta
-
-## Desarrollo
-
-Para ejecutar en modo desarrollo con recarga automática:
-
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
