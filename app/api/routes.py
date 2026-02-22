@@ -74,7 +74,8 @@ def get_url_stats(code: str, db: Session = Depends(get_database)):
         original_url=short_url.original_url,
         clicks=short_url.clicks_count,
         created_at=short_url.created_at,
-        expires_at=short_url.expires_at
+        expires_at=short_url.expires_at,
+        history=short_url.clicks
     )
 
 @router.get("/urls/{code}/qr")
@@ -106,7 +107,7 @@ def get_url_qr(code: str, db: Session = Depends(get_database)):
 
     img = qr.make_image(fill_color="black", back_color="white")
     
-    # Guardar la imagen en memoria (buffer) en lugar de disco
+    # guardar la imagen en memoria (buffer) en lugar de disco
     img_byte_arr = BytesIO()
     img.save(img_byte_arr, format='PNG')
     img_byte_arr.seek(0)

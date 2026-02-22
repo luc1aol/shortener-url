@@ -144,9 +144,10 @@ class UrlService:
         try:
             short_url = db.query(ShortUrl).filter(ShortUrl.code == code).first()
             if short_url:
-                short_url.clicks += 1
+                short_url.clicks_count += 1
                 db.commit()
-        except Exception:
+        except Exception as e:
+            print(f"Error incrementando clicks: {e}")
             db.rollback()
     
     @staticmethod

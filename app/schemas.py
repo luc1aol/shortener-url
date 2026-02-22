@@ -1,6 +1,6 @@
 from pydantic import BaseModel, HttpUrl, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 
 class UrlCreate(BaseModel):
@@ -24,6 +24,15 @@ class UrlResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ClickLog(BaseModel):
+    created_at: datetime
+    referrer: Optional[str] = None
+    browser: Optional[str] = None
+    os: Optional[str] = None
+    device_type: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
 
 class UrlStats(BaseModel):
     code: str
@@ -31,6 +40,7 @@ class UrlStats(BaseModel):
     clicks: int
     created_at: datetime
     expires_at: Optional[datetime]=None
+    history: List[ClickLog] = []
     
     class Config:
         from_attributes = True
@@ -43,3 +53,4 @@ class UrlResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
