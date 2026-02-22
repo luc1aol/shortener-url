@@ -22,9 +22,9 @@ class Click(Base):
     short_url_code = Column(String, ForeignKey("short_urls.code"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    referrer = Column(String, nullable=True)     # Ej: https://t.co/ (Twitter)
-    browser = Column(String, nullable=True)      # Ej: Chrome, Safari
-    os = Column(String, nullable=True)           # Ej: iOS, Windows
-    device_type = Column(String, nullable=True)  # Ej: Mobile, Desktop
+    referrer = Column(String, nullable=True)   
+    browser = Column(String, nullable=True) 
+    os = Column(String, nullable=True)       
+    device_type = Column(String, nullable=True) 
 
     short_url = relationship("ShortUrl", back_populates="clicks")

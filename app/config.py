@@ -14,11 +14,10 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
-    REDIS_TTL: int = 3600  # TTL en segundos para caché (1 hora)
+    REDIS_TTL: int = 3600  # ttl en segundos para caché (1 hora)
     
-    # Aplicación
     BASE_URL: str = "http://localhost:8000"
-    CODE_LENGTH: int = 6  # Longitud del código de URL corta
+    CODE_LENGTH: int = 6  # longitud del código de url corta
     
     class Config:
         env_file = ".env"

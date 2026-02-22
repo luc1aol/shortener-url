@@ -19,7 +19,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especificar dominios permitidos
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,6 +48,5 @@ def health_check():
     return {"status": "healthy"}
 
 
-# Incluir routers (después de rutas estáticas)
 app.include_router(router, prefix="/api", tags=["urls"])
-app.include_router(redirect_router)  # Router de redirección sin prefijo
+app.include_router(redirect_router) 
